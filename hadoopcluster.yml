@@ -1,0 +1,118 @@
+- name: configure hadoop
+  hosts: master
+  become: yes
+  vars_prompt:
+    - name: masterIP
+      prompt: Enter your Master IP
+      private: no
+    - name: masternode_dir
+      prompt: Enter your directory name where Metadata of Datanodes will save
+      private: no
+  tasks:
+  - name: java jdk
+    copy:
+     src: /root/jdk-8u171-linux-x64.rpm       
+     dest: /root/
+
+  - name: java install
+    package:
+     name: /root/jdk-8u171-linux-x64.rpm
+     state: present 
+     disable_gpg_check: yes
+
+  - name: Masternode directory creation
+    file:
+     path: / "{{masternode_dir}}" 
+     state: directory
+
+  - name: hadoop repo
+    get_url:
+     url: https://archive.apache.org/dist/hadoop/core/hadoop-1.2.1/hadoop-1.2.1-1.x86_64.rpm
+     dest: /root/
+
+  - name: hadoop installation
+    command: rpm -ivh --force /root/hadoop-1.2.1-1.x86_64.rpm
+  
+    
+  - name: core-site.xml
+    template:
+     src: /root/core-site.txt
+     dest: /etc/hadoop/core-site.xml
+  
+  - name: hdfs-site.xml
+    template:
+     src: /root/hdfs-site.txt
+     dest: /etc/hadoop/hdfs-site.xml
+
+  - name: Selinux shut down
+    command: setenforce 0
+
+
+  - name: format
+    shell: echo "Y" | hadoop namenode -format
+    ignore_errors: yes
+  - name: start
+    command: hadoop-daemon.sh start namenode
+    ignore_errors: yes
+
+
+
+- name: configure datanode
+  hosts: worker
+  become: yes
+  vars_prompt:
+    - name: masterIP
+      prompt: Enter your Master IP
+      private: no
+ 
+    - name: datanode_dir
+      prompt: Enter the directory name you want to store data
+      private: no
+  tasks:
+  - name: java jdk
+    copy:
+     src: /root/jdk-8u171-linux-x64.rpm
+     dest: /root/
+
+  - name: java install
+    package:
+     name: /root/jdk-8u171-linux-x64.rpm
+     state: present
+     disable_gpg_check: yes
+  
+  - name: Datanode directory creation
+    file:
+     path: / "{{datanode_dir}}"
+     state: directory
+
+  - name: hadoop repo
+    get_url:
+     url: https://archive.apache.org/dist/hadoop/core/hadoop-1.2.1/hadoop-1.2.1-1.x86_64.rpm
+     dest: /root/
+
+  - name: hadoop installation
+    command: rpm -ivh --force /root/hadoop-1.2.1-1.x86_64.rpm
+ 
+  - name: core-site.xml
+    template:
+     src: /root/core-site_data.xml
+     dest: /etc/hadoop/core-site.xml
+
+  - name: hdfs-site.xml
+    template:
+     src: /root/hdfs-site_data.xml
+     dest: /etc/hadoop/hdfs-site.xml
+
+  - name: Selinux shut down
+    command: setenforce 0
+
+  - name: start
+    command: hadoop-daemon.sh start datanode
+    ignore_errors: yes
+
+
+
+
+
+
+
